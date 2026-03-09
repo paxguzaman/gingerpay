@@ -27,9 +27,9 @@ module.exports = async function handler(req, res) {
   const localPhone    = toLocal(phone);
   const numericAmount = Math.floor(parseFloat(amount));
 
-  // Callback URL = this same deployment's /api/callback
-  const host        = req.headers['x-forwarded-host'] || req.headers.host;
-  const proto       = req.headers['x-forwarded-proto'] || 'https';
+  // Callback URL — hardcoded to production domain for reliability
+  const host        = process.env.VERCEL_PROJECT_PRODUCTION_URL || req.headers['x-forwarded-host'] || req.headers.host;
+  const proto       = 'https';
   const callbackUrl = `${proto}://${host}/api/callback`;
 
   const stkBody = {

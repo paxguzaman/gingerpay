@@ -255,7 +255,7 @@ function stopProgress() {
 // ── Active connections ────────────────────────────────────
 let pollTimer    = null;
 let pollCount    = 0;
-const MAX_POLLS  = 20; // 20 × 3s = 60s
+const MAX_POLLS  = 40; // 40 × 2s = 80s
 
 function cleanup() {
   if (pollTimer)  { clearInterval(pollTimer); pollTimer = null; }
@@ -279,10 +279,10 @@ function startListening(reference, phone) {
   showStatus('waiting', { phone });
   startProgress(62_000);
 
-  // Poll every 3s starting after 5s (give user time to enter PIN)
+  // Poll every 2s starting after 3s
   setTimeout(() => {
-    pollTimer = setInterval(() => pollResult(phone), 3000);
-  }, 5000);
+    pollTimer = setInterval(() => pollResult(phone), 2000);
+  }, 3000);
 }
 
 // ── Reset ─────────────────────────────────────────────────
