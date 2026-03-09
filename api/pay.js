@@ -1,4 +1,4 @@
-// api/pay.js — Initiate STK Push
+// api/pay.js — Initiate STK Push via Lipia v2 API
 const fetch = require('node-fetch');
 
 function toLocal(input) {
@@ -10,7 +10,6 @@ function isValidPhone(p)  { return /^(07|01)\d{8}$/.test(toLocal(p)); }
 function isValidAmount(a) { const n = parseFloat(a); return !isNaN(n) && n >= 1; }
 
 module.exports = async function handler(req, res) {
-  // CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -27,23 +26,21 @@ module.exports = async function handler(req, res) {
   const localPhone    = toLocal(phone);
   const numericAmount = Math.floor(parseFloat(amount));
 
-  // Callback URL — hardcoded to production domain for reliability
   const host        = process.env.VERCEL_PROJECT_PRODUCTION_URL || req.headers['x-forwarded-host'] || req.headers.host;
-  const proto       = 'https';
-  const callbackUrl = `${proto}://${host}/api/callback`;
+  const callbackUrl = `https://${host}/api/callback`;
 
   const stkBody = {
-    phone:              localPhone,
-    amount:             String(numericAmount),
-    callback_url:       callbackUrl,
+    phone_number:       localPhone,
+    amount:             numericAmount,
     external_reference: `GP-${localPhone}-${Date.now()}`,
+    callback_url:       callbackUrl,
   };
 
   console.log('[Pay] STK body:', JSON.stringify(stkBody));
   console.log('[Pay] Callback URL:', callbackUrl);
 
   try {
-    const lipiaRes = await fetch('https://lipia-api.kreativelabske.com/api/request/stk', {
+    const lipiaRes = await fetch('https://lipia-api.kreativelabske.com/api/v2/payments/stk-push', {
       method:  'POST',
       headers: {
         'Content-Type':  'application/json',
@@ -58,19 +55,14 @@ module.exports = async function handler(req, res) {
     let data = {};
     try { data = JSON.parse(raw); } catch {}
 
-    const rawLower  = raw.trim().toLowerCase().replace(/^"|"$/g, '');
-    const bodyIsOk  = ['authorized', 'ok', 'success'].includes(rawLower);
-    const checkoutRequestId =
-      data.checkoutRequestId || data.CheckoutRequestID ||
-      data.checkout_request_id || data.reference || null;
-    const isSuccess = lipiaRes.ok || data.success === true || !!checkoutRequestId || bodyIsOk;
-
-    if (isSuccess) {
-      console.log(`[Pay] ✅ STK sent for ${localPhone}`);
-      return res.json({ success: true, message: 'STK Push sent — check your phone', phone: localPhone });
+    if (data.success && data.data && data.data.TransactionReference) {
+      const ref = data.data.TransactionReference;
+      console.log(`[Pay] ✅ STK sent. Reference: ${ref}`);
+      return res.json({ success: true, message: 'STK Push sent — check your phone', phone: localPhone, reference: ref });
     }
 
-    return res.status(400).json({ success: false, message: data.message || raw || `HTTP ${lipiaRes.status}` });
+    const errMsg = data.customerMessage || data.message || `HTTP ${lipiaRes.status}`;
+    return res.status(400).json({ success: false, message: errMsg });
 
   } catch (err) {
     console.error('[Pay] Error:', err.message);

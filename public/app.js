@@ -263,11 +263,11 @@ function cleanup() {
   pollCount = 0;
 }
 
-async function pollResult(phone) {
+async function pollResult(reference) {
   if (pollCount >= MAX_POLLS) { cleanup(); showStatus('timeout', {}); return; }
   pollCount++;
   try {
-    const r = await fetch(`/api/result?phone=${encodeURIComponent(phone)}`);
+    const r = await fetch(`/api/result?reference=${encodeURIComponent(reference)}`);
     const d = await r.json();
     if (d.status === 'SUCCESS') { cleanup(); showStatus('confirmed', d); }
     else if (d.status === 'FAILED') { cleanup(); showStatus('failed', { resultDesc: d.resultDesc }); }
@@ -281,7 +281,7 @@ function startListening(reference, phone) {
 
   // Poll every 2s starting after 3s
   setTimeout(() => {
-    pollTimer = setInterval(() => pollResult(phone), 2000);
+    pollTimer = setInterval(() => pollResult(reference), 2000);
   }, 3000);
 }
 
@@ -323,7 +323,7 @@ payBtn.addEventListener('click', async () => {
 
     if (data.success) {
       setBtnState('success');
-      startListening(data.checkoutRequestId, toLocal(rawPhone));
+      startListening(data.reference, toLocal(rawPhone));
     } else {
       showStatus('apierror', { message: data.message });
     }
