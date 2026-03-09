@@ -4,6 +4,8 @@
  * No SSE needed — works perfectly on serverless.
  */
 
+document.addEventListener('DOMContentLoaded', function () {
+
 // ── Theme ───────────────────────────────────────────────────
 const html        = document.documentElement;
 const toggleBtn   = document.getElementById('themeToggle');
@@ -329,3 +331,5 @@ payBtn.addEventListener('click', async () => {
 [amountInput, phoneInput].forEach(el => {
   el.addEventListener('keydown', e => { if (e.key === 'Enter') payBtn.click(); });
 });
+
+}); // end DOMContentLoaded
